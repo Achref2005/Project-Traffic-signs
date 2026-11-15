@@ -1,0 +1,4 @@
+{
+  "/api/infer/route": "app/api/infer/route.js",
+  "/page": "app/page.js"
+}

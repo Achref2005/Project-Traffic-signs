@@ -1,0 +1,16 @@
+class,AP50
+Red Light,0.717
+Green Light,0.884
+Speed Limit 110,0.885
+Speed Limit 50,0.919
+Speed Limit 70,0.954
+Speed Limit 60,0.969
+Speed Limit 20,0.975
+Speed Limit 40,0.976
+Speed Limit 90,0.979
+Speed Limit 80,0.98
+Speed Limit 30,0.981
+Speed Limit 120,0.985
+Speed Limit 100,0.991
+Speed Limit 10,0.995
+Stop,0.995

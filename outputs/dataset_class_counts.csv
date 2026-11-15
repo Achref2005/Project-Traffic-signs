@@ -1,0 +1,16 @@
+class,train,valid,test
+Green Light,542,122,110
+Red Light,585,108,94
+Speed Limit 10,19,0,3
+Speed Limit 100,267,52,46
+Speed Limit 110,101,17,21
+Speed Limit 120,252,60,44
+Speed Limit 20,285,56,46
+Speed Limit 30,334,74,60
+Speed Limit 40,235,55,53
+Speed Limit 50,283,71,50
+Speed Limit 60,301,76,45
+Speed Limit 70,318,78,53
+Speed Limit 80,323,56,61
+Speed Limit 90,168,38,34
+Stop,285,81,50

@@ -1,0 +1,19 @@
+
+# Dependencies
+node_modules/
+ui/node_modules/
+
+# Build files
+.next/
+dist/
+build/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Large datasets
+database/cardetection.zip
+database/gtsrb/gtsrb.zip
