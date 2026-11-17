@@ -2,6 +2,17 @@
 // Query parameters (e.g. ?conf=0.5) are forwarded unchanged.
 export const runtime = "nodejs";
 
+export async function DELETE(req) {
+  const backend = process.env.MODEL_API_URL || "http://127.0.0.1:8001";
+  const sid = new URL(req.url).searchParams.get("session") || "";
+  try {
+    const r = await fetch(`${backend}/session/${encodeURIComponent(sid)}`, { method: "DELETE" });
+    return Response.json(await r.json(), { status: r.status });
+  } catch (e) {
+    return Response.json({ closed: false }, { status: 502 });
+  }
+}
+
 export async function POST(req) {
   const backend = process.env.MODEL_API_URL || "http://127.0.0.1:8001";
   try {

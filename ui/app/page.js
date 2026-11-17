@@ -36,10 +36,11 @@ export default function Page() {
   const imgszRef = useRef(imgsz);
   imgszRef.current = imgsz;
   const lastRef = useRef([]);   // hold the last detections to stop box flickering
+  const sessRef = useRef("");  // video stream id: backend keeps tracker + LSTM state per stream
   const missRef = useRef(0);    // consecutive empty frames
   const zeroRef = useRef(0);    // videoWidth===0 watchdog counter
 
-  useEffect(() => () => clearInterval(timerRef.current), []);
+  useEffect(() => () => { clearInterval(timerRef.current); endSession(); }, []);
 
   function resetLiveStats() {
     setLiveDets([]);
@@ -126,6 +127,11 @@ export default function Page() {
   }
 
   // — video live loop -------------------------------------------------------
+  function endSession() {
+    if (sessRef.current) fetch(`/api/infer?session=${sessRef.current}`, { method: "DELETE" }).catch(() => {});
+    sessRef.current = "";
+  }
+
   function stopLive() {
     clearInterval(timerRef.current);
     timerRef.current = null;
@@ -140,6 +146,8 @@ export default function Page() {
     setError(null);
     resetVStats();
     if (v.paused || v.ended) v.play().catch(() => {});
+    endSession();
+    sessRef.current = `v${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     setLive(true);
     clearInterval(timerRef.current);
     timerRef.current = setInterval(grabAndSend, 110); // ~9 analysed fps
@@ -170,7 +178,7 @@ export default function Page() {
       if (!blob) { busyRef.current = false; return; }
       const fd = new FormData();
       fd.append("image", new File([blob], "frame.jpg", { type: "image/jpeg" }));
-      fetch(`/api/infer?conf=${confRef.current}&imgsz=${imgszRef.current}`, { method: "POST", body: fd })
+      fetch(`/api/infer?conf=${confRef.current}&imgsz=${imgszRef.current}&session=${sessRef.current}`, { method: "POST", body: fd })
         .then(async (r) => {
           const st = r.status;
           const data = await r.json().catch(() => ({}));
@@ -217,14 +225,14 @@ export default function Page() {
       ctx.lineWidth = lw;
       ctx.strokeStyle = "#ffc400";
       ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-      const l1 = `${d.yolo_class} ${Math.round(d.yolo_conf * 100)}%`;
+      const l1 = `${d.track_id != null ? "#" + d.track_id + " " : ""}${d.yolo_class} ${Math.round(d.yolo_conf * 100)}%`;
       const ly1 = Math.max(0, y1 - th - 2);
       ctx.fillStyle = "rgba(30, 20, 0, .78)";
       ctx.fillRect(x1, ly1, ctx.measureText(l1).width + pad * 2, th);
       ctx.fillStyle = "#ffd54a";
       ctx.fillText(l1, x1 + pad, ly1 + pad);
-      if (d.cnn_class) {
-        const l2 = d.cnn_class;
+      if (d.refined_class) {
+        const l2 = `${d.refined_class} ${Math.round(d.refined_conf * 100)}%`;
         const ly2 = Math.min(h - th - 1, y2 + 2);
         ctx.fillStyle = "rgba(0, 35, 12, .78)";
         ctx.fillRect(x1, ly2, ctx.measureText(l2).width + pad * 2, th);
@@ -245,7 +253,7 @@ export default function Page() {
       <div className="hero">
         <h1>🚦 Traffic Sign Recognition</h1>
         <p>
-          YOLOv8n detects the panels · GTSRB CNN names each one.<br />
+          YOLOv8 + Transformer detects the panels · tracker + LSTM keeps video predictions stable.<br />
           Upload a photo — or drop dashcam footage and watch the models work live.
         </p>
       </div>
@@ -384,9 +392,10 @@ export default function Page() {
             <div className="dets" style={{ marginTop: 10 }}>
               {liveDets.map((d, i) => (
                 <div className="det" key={i}>
-                  <span className="chip">YOLO · {d.yolo_class}</span>
-                  {d.cnn_class && <span className="chip green">CNN · {d.cnn_class}</span>}
-                  <span className="bar">det {Math.round(d.yolo_conf * 100)}%{d.cnn_class ? `  ·  cls ${Math.round(d.cnn_conf * 100)}%` : ""}</span>
+                  <span className="chip">{d.yolo_class}</span>
+                  {d.track_id != null && <span className="chip">ID {d.track_id}</span>}
+                  {d.refined_class && <span className="chip green">LSTM · {d.refined_class}</span>}
+                  <span className="bar">det {Math.round(d.yolo_conf * 100)}%{d.refined_class ? `  ·  refined ${Math.round(d.refined_conf * 100)}%` : ""}</span>
                 </div>
               ))}
             </div>
@@ -397,7 +406,7 @@ export default function Page() {
       {loading && (
         <div className="card" style={{ marginTop: 20, textAlign: "center" }}>
           <div className="spinner" />
-          Running YOLOv8 + CNN…
+          Running YOLOv8 + Transformer…
         </div>
       )}
 
@@ -416,9 +425,10 @@ export default function Page() {
           <div className="dets">
             {result.detections.map((d, i) => (
               <div className="det" key={i}>
-                <span className="chip">YOLO · {d.yolo_class}</span>
-                {d.cnn_class && <span className="chip green">CNN · {d.cnn_class}</span>}
-                <span className="bar">det {Math.round(d.yolo_conf * 100)}%{d.cnn_class ? `  ·  cls ${Math.round(d.cnn_conf * 100)}%` : ""}</span>
+                <span className="chip">{d.yolo_class}</span>
+                {d.track_id != null && <span className="chip">ID {d.track_id}</span>}
+                  {d.refined_class && <span className="chip green">LSTM · {d.refined_class}</span>}
+                <span className="bar">det {Math.round(d.yolo_conf * 100)}%{d.refined_class ? `  ·  refined ${Math.round(d.refined_conf * 100)}%` : ""}</span>
               </div>
             ))}
           </div>
@@ -428,7 +438,7 @@ export default function Page() {
       <p className="tip">
         API service: <code>python server/infer_api.py</code> before using the UI.<br />
         Endpoints — POST <code>/infer</code> (image, conf) · GET <code>/health</code><br />
-        Video mode samples ~9 frames/s while the file plays and draws YOLO/CNN boxes live on the overlay.<br />
+        Video mode samples ~9 frames/s while the file plays and tracks each sign across frames (ID) and refines its class with the LSTM.<br />
         Small/far signs barely visible at 416 px — raise <em>Sign scale</em> (imgsz) and lower confidence.
       </p>
     </div>

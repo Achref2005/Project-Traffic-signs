@@ -17,3 +17,9 @@ venv/
 # Large datasets
 database/cardetection.zip
 database/gtsrb/gtsrb.zip
+
+# Generated
+runs/_signs_resolved.yaml
+data/sequences/
+outputs/predictions/
+runs/train/smoke_*/

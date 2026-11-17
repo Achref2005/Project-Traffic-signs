@@ -1,10 +1,10 @@
 # 🚦 Traffic Sign UI (Next.js)
 
-Web interface for the detection+classification pipeline trained by `../train.ipynb`.
+Web interface for the YOLOv8 + Transformer detector (image mode) and tracker + LSTM (video mode).
 
 ## Run
 
-1. start the model service (loads `runs/yolov8n_traffic_signs*/weights/best.pt` + `../models/gtsrb_cnn_scratch.pth`):
+1. start the model service (loads the detector weights once; optional `weights/temporal_lstm.pt` for the LSTM):
 
    ```
    # from the project root
@@ -27,7 +27,7 @@ Switch to **🎥 Dashcam video**, drop an mp4/avi/webm, press **▶ Start live d
 
 - the browser samples ~9 frames/s from the playing video (hidden canvas → JPEG),
 - frames go through the same `POST /infer` endpoint, so no extra server endpoint is needed,
-- returned boxes (YOLO + CNN labels) are drawn live on an overlay canvas,
+- returned boxes (class, confidence, track ID, LSTM-refined class) are drawn live on an overlay canvas,
 - the panel below shows a frame/sign counter, per-class totals and the current frame detections,
 - the confidence slider (shared with photo mode) is passed as `?conf=` — forwarded by `app/api/infer/route.js`,
 - **Sign scale (imgsz, 416 → 1280)** changes the detection resolution on the fly: 416 matches training for
